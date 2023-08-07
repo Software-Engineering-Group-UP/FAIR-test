@@ -1,0 +1,10 @@
+| Organisation             | Name and Analysis link                                                                                   | Is Research Group ?                        | GitHub Repo Link                                    | 
+|--------------------------|----------------------------------------------------------------------------------------------------------|--------------------------------------------|-----------------------------------------------------|
+| University of Potsdam    | [Remote Sensing - Earth Surface Processes Group ](https://github.com/user/repo/blob/branch/other_file.md) | Yes                                        | [Link](https://github.com/UP-RS-ESP)                |
+| University of Potsdam    | [Macroecology](https://github.com/user/repo/blob/branch/other_file.md)                                   | Yes                                        | [Link](https://github.com/UP-macroecology)          |
+| University of Potsdam    | [No Name](https://github.com/user/repo/blob/branch/other_file.md)                                        | Yes (No public members or public info)     | [Link](https://github.com/University-of-Potsdam-MM) |
+| University of Potsdam    | [OST observatory](https://github.com/user/repo/blob/branch/other_file.md)                                | Not Sure (It appears to be a user profile) | [Link](https://github.com/hpi-sam)                  |
+| Hasso Plattner Institute | [System Analysis And Modelling Group](https://github.com/user/repo/blob/branch/other_file.md)            | Yes                                        | [Link](https://github.com/OST-Observatory)          |
+| Hasso Plattner Institute | [Business Process Technology](https://github.com/user/repo/blob/branch/other_file.md)                    | Yes                                        | [Link](https://github.com/bptlab)                   |
+
+Note:- Still need to modify analysis links 
