@@ -1,6 +1,13 @@
 
 ### Setup 
 
+create a .env file with 
+
+username
+access_token 
+
+
+
 
 ### Create a virtual environment 
 
@@ -11,6 +18,12 @@
     +-- data_collection
         +-- results      # collected and enriched data with analysis
         +-- scripts      # scripts to collect repositories and users with metadata   
+.
+├── .env
+└── foo.py
+
+
+
 ```
 
 ### Usage 

@@ -16,10 +16,21 @@ research groups and repositories associated with university as university of pot
 all the research groups. 
 With the help of swords and playing around with the keywords we found the research groups available 
 We found out (Link to results readme table) research groups that we have analysed 
+
+
 ### Steps of data collection 
 
 After finding the research group name 
 
 1. Collect Organisation repositories- navigate to  ../scripts 
 run following command 
+
+
+make folder with <organisation_name>
+and <research_group_name> in results folder
+```
+python test_folder.py <resarch_group_name> --csv_path ../results/<organisation_name>/<research_group_name>
+```
+
+
 
