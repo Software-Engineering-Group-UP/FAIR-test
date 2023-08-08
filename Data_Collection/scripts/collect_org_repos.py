@@ -1,11 +1,13 @@
-# to run this file
-# python collect_org_repos.py pik-piam --access_token your_access_token
-
+# This file is for testing the executable files before
+# current executable command - test_folder.py pik-piam --csv_path
 import argparse
 import requests
 import csv
+from dotenv import load_dotenv
+import os
 
 def get_all_repositories(org_name, access_token):
+
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Accept": "application/vnd.github.v3+json"
@@ -38,7 +40,7 @@ def get_all_repositories(org_name, access_token):
 
     return all_repositories
 
-def save_to_csv(repositories, org_name):
+def save_to_csv(repositories, org_name, save_path):
     keys = ["name", "owner", "description", "language", "forks_count", "stargazers_count", 'events_url', 'tags_url',
             'private', 'notifications_url', 'blobs_url', 'deployments_url', 'keys_url', 'archived', 'ssh_url',
             'watchers', 'forks', 'contributors_url', 'releases_url', 'id', 'disabled', 'permissions', 'languages_url',
@@ -58,15 +60,19 @@ def save_to_csv(repositories, org_name):
         writer.writerows(repositories)
 
 if __name__ == "__main__":
+    load_dotenv()  # Load environment variables from .env file
+
+    access_token = os.environ.get("ACCESS_TOKEN")  # Get access token from environment variable
+
     parser = argparse.ArgumentParser(description="GitHub Organization Repositories to CSV")
     parser.add_argument("org_name", type=str, help="Name of the GitHub organization")
-    parser.add_argument("--access_token", type=str, default="", help="Your GitHub access token")
+    parser.add_argument("--csv_path", type=str, default="results", help="Path to save the CSV file")
     args = parser.parse_args()
 
-    access_token = args.access_token
     org_name = args.org_name
-    filename = f"results/{org_name}_repositories.csv"
+    save_path = args.csv_path
+    filename = f"{save_path}/{org_name}.csv"
 
     repositories = get_all_repositories(org_name, access_token)
-    save_to_csv(repositories, org_name)
+    save_to_csv(repositories, org_name, save_path)
     print(f"Repositories saved to {filename}.")
