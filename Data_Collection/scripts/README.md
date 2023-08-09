@@ -19,7 +19,10 @@ We found out (Link to results readme table) research groups that we have analyse
 
 
 ### Steps of data collection 
+ We followed ETL (Extract Transform Load Process). Some of the steps has to be done manually. 
 
+
+####  1. Extract 
 After finding the research group name 
 
 1. Collect Organisation repositories- navigate to  ../scripts 
@@ -29,8 +32,26 @@ run following command
 make folder with <organisation_name>
 and <research_group_name> in results folder
 ```
-python test_folder.py <resarch_group_name> --csv_path ../results/<organisation_name>/<research_group_name>
+python collect_org_repos.py <resarch_group_name> --csv_path ../results/<organisation_name>/<research_group_name>
 ```
+
+for example If you want to collect data for research group software engineering you found on github and it is associated with universtiy of potsdam than
+
+<research_group_name> will be software_engineering and <organisation_name> will be university of potsdam. You will have to create folder <organisation_name> and 
+sub folder <research_group_name_folder>
+
+2. Collect howfairis complience 
+
+```
+python howfairis_org.py --input ../results/<organisation_name>/<research_group_name_folder>/<research_group_name>.csv  
+```
+
+3. Collect all testing details 
+If testing is done, if github actions or cicd implemented and if automated testing is implemented
+```
+ python all_testing.py ../results/<organisation_name>/<research_group_name_folder>/<research_group_name>.csv  
+```
+
 
 
 
