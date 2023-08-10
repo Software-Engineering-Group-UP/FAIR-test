@@ -87,8 +87,8 @@ def parse_repo(repo_url):
 # see: https://github.com/fair-software/howfairis/#rate-limit
 # Delete credentials if manually applied
 load_dotenv()
-token = os.environ.get("USER")
-user = os.environ.get("ACCESS_TOKEN")
+token = os.environ.get("ACCESS_TOKEN")
+user = os.environ.get("USER")
 os.environ['APIKEY_GITHUB'] = user + ":" + token
 print(token)
 print(user)
