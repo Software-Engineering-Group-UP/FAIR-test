@@ -1,5 +1,13 @@
+
+
+"""
+write a python program to iterate through  column name "html_url" from a csv file and find out if given url has test or tests named folder (which is used code for testing) in the root directory also find out if test keyword is present in make file or yml file used for automated testing in cicd and write the result in same csv file with column names test_folder and automated_testing
+
 # This file is for testing the executable files before
 # current executable command - test_folder.py pik-piam --csv_path
+
+
+"""
 import argparse
 import requests
 import csv
@@ -7,7 +15,13 @@ from dotenv import load_dotenv
 import os
 
 def get_all_repositories(org_name, access_token):
+    """Retrieve all repositories from <organisation_name> provided
 
+    Args:
+
+    Returns:
+
+    """
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Accept": "application/vnd.github.v3+json"
@@ -40,7 +54,15 @@ def get_all_repositories(org_name, access_token):
 
     return all_repositories
 
+
 def save_to_csv(repositories, org_name, save_path):
+    """Appends all retrieved data into csv files
+
+       Args:
+
+       Returns:
+
+       """
     keys = ["name", "owner", "description", "language", "forks_count", "stargazers_count", 'events_url', 'tags_url',
             'private', 'notifications_url', 'blobs_url', 'deployments_url', 'keys_url', 'archived', 'ssh_url',
             'watchers', 'forks', 'contributors_url', 'releases_url', 'id', 'disabled', 'permissions', 'languages_url',
@@ -59,7 +81,9 @@ def save_to_csv(repositories, org_name, save_path):
         writer.writeheader()
         writer.writerows(repositories)
 
+
 if __name__ == "__main__":
+
     load_dotenv()  # Load environment variables from .env file
 
     access_token = os.environ.get("ACCESS_TOKEN")  # Get access token from environment variable

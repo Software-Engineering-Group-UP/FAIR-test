@@ -1,78 +1,72 @@
 # This file is for testing the executable files before
-# current executable command - test_folder.py pik-piam --csv_path
-import argparse
-import requests
-import csv
-from dotenv import load_dotenv
+# current executable command - test_folder.py --input results/bptlab_repostiories.csv
+
 import os
+import pandas as pd
+import requests
+import argparse
 
-def get_all_repositories(org_name, access_token):
+def check_test_folder(url):
+    api_url = url.replace("https://github.com/", "https://api.github.com/repos/") + "/contents/"
+    response = requests.get(api_url)
 
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Accept": "application/vnd.github.v3+json"
-    }
+    if response.status_code == 200:
+        content = response.json()
+        for item in content:
+            if item["type"] == "dir" and item["name"].lower() in ["test", "tests"]:
+                return True
+    return False
 
-    url = f"https://api.github.com/orgs/{org_name}/repos"
+def check_automated_testing(url):
+    api_url_makefile = url.replace("https://github.com/", "https://raw.githubusercontent.com/") + "/main/Makefile"
+    api_url_yml = url.replace("https://github.com/",
+                              "https://raw.githubusercontent.com/") + "/main/.github/workflows/ci.yml"
 
-    all_repositories = []
-    page = 1
-    per_page = 100
+    response_makefile = requests.get(api_url_makefile)
+    response_yml = requests.get(api_url_yml)
 
-    while True:
-        params = {
-            "page": page,
-            "per_page": per_page
-        }
-        response = requests.get(url, headers=headers, params=params)
+    if response_makefile.status_code == 200:
+        makefile_content = response_makefile.text
+        if "test" in makefile_content:
+            return True
 
-        if response.status_code != 200:
-            print(f"Error occurred: {response.status_code}")
-            break
+    if response_yml.status_code == 200:
+        yml_content = response_yml.text
+        if "test" in yml_content:
+            return True
 
-        repositories = response.json()
-        all_repositories.extend(repositories)
+    return False
 
-        if len(repositories) < per_page:
-            break
+def check_cicd_pipeline(url):
+    api_url_actions = url.replace("https://github.com/", "https://api.github.com/repos/") + "/actions"
+    response_actions = requests.get(api_url_actions)
 
-        page += 1
+    if response_actions.status_code == 200:
+        actions_data = response_actions.json()
+        if actions_data.get("workflow_runs"):
+            return True
+    return False
 
-    return all_repositories
+def main(csv_file_path):
+    # Read the CSV file
+    df = pd.read_csv(csv_file_path, sep=',')
 
-def save_to_csv(repositories, org_name, save_path):
-    keys = ["name", "owner", "description", "language", "forks_count", "stargazers_count", 'events_url', 'tags_url',
-            'private', 'notifications_url', 'blobs_url', 'deployments_url', 'keys_url', 'archived', 'ssh_url',
-            'watchers', 'forks', 'contributors_url', 'releases_url', 'id', 'disabled', 'permissions', 'languages_url',
-            'git_commits_url', 'visibility', 'labels_url', 'fork', 'trees_url', 'mirror_url', 'is_template',
-            'web_commit_signoff_required', 'issue_events_url', 'subscription_url', 'stargazers_url', 'git_url',
-            'node_id', 'commits_url', 'subscribers_url', 'allow_forking', 'default_branch', 'has_downloads',
-            'assignees_url', 'comments_url', 'full_name', 'hooks_url', 'collaborators_url', 'contents_url',
-            'statuses_url', 'html_url', 'size', 'issue_comment_url', 'milestones_url', 'open_issues', 'watchers_count',
-            'git_refs_url', 'license', 'issues_url', 'svn_url', 'has_wiki', 'archive_url', 'has_issues',
-            'open_issues_count', 'downloads_url', 'pulls_url', 'owner', 'url', 'homepage', 'topics', 'created_at',
-            'clone_url', 'merges_url', 'branches_url', 'updated_at', 'git_tags_url', 'has_pages', 'forks_url',
-            'pushed_at', 'teams_url', 'has_projects', 'has_discussions', 'compare_url']
+    # Initialize the new column
+    df["actions"] = False
 
-    with open(filename, "w", newline="") as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=keys)
-        writer.writeheader()
-        writer.writerows(repositories)
+    # Iterate through the "html_url" column and populate the new columns
+    for idx, row in df.iterrows():
+        url = row["html_url"]
+        df.at[idx, "test_folder"] = check_test_folder(url)
+        df.at[idx, "automated_testing"] = check_automated_testing(url)
+        df.at[idx, "actions"] = check_cicd_pipeline(url)
+
+    # Overwrite the input CSV file with the updated DataFrame
+    df.to_csv(csv_file_path, index=False)
 
 if __name__ == "__main__":
-    load_dotenv()  # Load environment variables from .env file
+    parser = argparse.ArgumentParser(description="Check test folder, automated testing, and CI/CD in CSV file")
+    parser.add_argument("input_csv", help="Path to the input CSV file")
 
-    access_token = os.environ.get("ACCESS_TOKEN")  # Get access token from environment variable
-
-    parser = argparse.ArgumentParser(description="GitHub Organization Repositories to CSV")
-    parser.add_argument("org_name", type=str, help="Name of the GitHub organization")
-    parser.add_argument("--csv_path", type=str, default="results", help="Path to save the CSV file")
     args = parser.parse_args()
-
-    org_name = args.org_name
-    save_path = args.csv_path
-    filename = f"{save_path}/{org_name}.csv"
-
-    repositories = get_all_repositories(org_name, access_token)
-    save_to_csv(repositories, org_name, save_path)
-    print(f"Repositories saved to {filename}.")
+    main(args.input_csv)

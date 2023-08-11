@@ -69,9 +69,9 @@ def parse_repo(repo_url):
             time.sleep(2)
             request_successful = True
             return entry
-        except Exception as e: # pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except
             print(f"Error occured for {repo_url} (most likely timeout issue due"
-                f" to API limitation. Sleep for a while. Error message: {e}")
+                  f" to API limitation. Sleep for a while. Error message: {e}")
             if "Something went wrong asking the repo for its default branch" in str(
                     e):
                 print("Skipping repository...")
@@ -81,14 +81,16 @@ def parse_repo(repo_url):
             else:
                 time.sleep(1500)
 
+
 # if unauthorized API is used, rate limit is lower,
 # leading to a ban and waiting time needs to be increased
 # see: https://github.com/fair-software/howfairis/#rate-limit
 # Delete credentials if manually applied
 load_dotenv()
-token = os.getenv('GITHUB_TOKEN')
-user = os.getenv('GITHUB_USER')
+token = os.environ.get("ACCESS_TOKEN")
+user = os.environ.get("USER")
 os.environ['APIKEY_GITHUB'] = user + ":" + token
+
 
 if __name__ == '__main__':
     # Initiate the parser
@@ -103,16 +105,13 @@ if __name__ == '__main__':
     parser.add_argument("--output",
                         "-o",
                         help="The file name of the filtered repositories.",
-                        default="results/repositories_howfairis.csv")
+                       )
 
     # Read arguments from the command line
     args = parser.parse_args()
     print(f"Retrieving howfairis variables for the following file: {args.input}")
 
-
-
     df_repos = read_input_file(args.input)
-
 
     howfairis_variables = []
 
