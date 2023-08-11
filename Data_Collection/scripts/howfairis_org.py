@@ -90,8 +90,7 @@ load_dotenv()
 token = os.environ.get("ACCESS_TOKEN")
 user = os.environ.get("USER")
 os.environ['APIKEY_GITHUB'] = user + ":" + token
-print(token)
-print(user)
+
 
 if __name__ == '__main__':
     # Initiate the parser
