@@ -8,6 +8,9 @@
 
 ### Setup 
 
+
+Add more documentation here  
+New documentaion will be added
 create a .env file with 
 
 username
