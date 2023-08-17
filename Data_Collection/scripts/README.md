@@ -1,14 +1,12 @@
 ```
-+- FAIR-test
-    +- data_collection
-        +- results
-            .
-            .
-        +- scripts
-            +- collect_org_repos.py  # collect all the repositories within the organisation 
-            +- howfairis_org.py      # Enriches the collected repositories with howfairis variable
-            +- all_testing.py        # Collects and save 
-                     
+. FAIR-test
+└──  data_collection
+    ├── results # collected and enriched data with analysis
+    └── scripts      # scripts to collect repositories and users with metadata              
+        ├── collect_org_repos.py  # collect all the repositories within the organisation
+        ├── howfairis_org.py      # Enriches the collected repositories with howfairis variable             
+        └── all_testing.py        # Collects and save
+
 ```
 
 We have used SWORDS-UP to gather repositories and organisation/ research group names. Although it is not the most effective way to find out 
@@ -52,6 +50,9 @@ If testing is done, if github actions or cicd implemented and if automated testi
  python all_testing.py ../results/<organisation_name>/<research_group_name_folder>/<research_group_name>.csv  
 ```
 
+4. Combine results in single .csv file
 
-
+```
+ python combine_csv.py 
+ ```
 
