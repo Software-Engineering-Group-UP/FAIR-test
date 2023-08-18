@@ -1,6 +1,6 @@
 '''
 
- python test_folder.py ../results/university_of_potsdam/AEye/aeye-lab.csv --organization "university_of_potsdam" --research_group "aeya"
+ python append_org_researchGroup_name.py ../results/university_of_potsdam/AEye/aeye-lab.csv --organization "university_of_potsdam" --research_group "aeya"
 
 '''
 
