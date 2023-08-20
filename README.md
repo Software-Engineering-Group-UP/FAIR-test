@@ -1,52 +1,50 @@
-    
-    ### Background 
-    
+### Background 
     
     
     
     
     
-    ### Installation 
+    
+### Installation 
     
     
     
-    #### Requirements 
+#### Requirements 
     
     git 
     python 
     pip 
     
-    #### steps 
+#### Steps 
+Clone this project  
+```
+git clone https://github.com/Software-Engineering-Group-UP/FAIR-test.git
+```
+Create a virtual environment at project root, and activate it 
     
-    clone this project 
-    ```
-    git clone https://github.com/Software-Engineering-Group-UP/FAIR-test.git
-    ```
-    Create a virtual environment at project root, and activate it 
+```
+cd FAIR-test
     
-    ```
-    cd FAIR-test
+python -m venv venv
     
-    python -m venv venv
+./venv/Scripts/activate.bat
     
-    ./venv/Scripts/activate.bat
-    
-    ```
-    
-    
-    ### Create a virtual environment 
-    
-    Note that you need to create a .env file in the root directory of the project and add the following lines:
-    ```
-    ACCESS_TOKEN = "your github access token" 
-    USER = "your github username" 
-    ```
-    Look at the documentation here:  https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token
-    
-    ### Project structure 
+```
     
     
-    ```
+### Create a virtual environment 
+
+Note that you need to create a .env file in the root directory of the project and add the following lines:
+```
+ACCESS_TOKEN = "your github access token" 
+USER = "your github username" 
+```
+Look at the documentation here:  https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token
+    
+### Project structure 
+    
+    
+    
     
     ├── data_collection                     # results and scripts to collect the data  
     │  ├── results                          # Folder that contains the results of data collected through scripts
@@ -64,10 +62,9 @@
     ├── LICENSE				                    # License used for this software project
     └── README.md				                # Documentation of this project
     
-    ```
+    
+     
+### Usage 
     
     
-    ### Usage 
-    
-    
-    ### License 
+### License 

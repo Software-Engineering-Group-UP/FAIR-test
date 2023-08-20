@@ -1,7 +1,9 @@
 '''
 
- python test_folder.py input.csv
+ python fair_score_counting.py input.csv
 
+
+This program counts the number of true values from column names  'howfairis_repository', 'howfairis_license', 'howfairis_registry', 'howfairis_citation', 'howfairis_checklist' and saves them to column called fair_score
 '''
 
 
