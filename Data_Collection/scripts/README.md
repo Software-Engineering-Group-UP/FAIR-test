@@ -55,4 +55,8 @@ If testing is done, if github actions or cicd implemented and if automated testi
 ```
  python combine_csv.py 
  ```
+5. Count the fair score and save in a new .csv file column
 
+```
+python fair_score_counting.py <input>.csv
+```
