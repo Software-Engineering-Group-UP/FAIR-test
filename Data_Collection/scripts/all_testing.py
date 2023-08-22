@@ -1,77 +1,70 @@
-"""
-write a python program to iterate through  column name "html_url" from a csv file and find out if given url has test or tests named folder (which is used code for testing) in the root directory also find out if test keyword is present in make file or yml file used for automated testing in cicd and write the result in same csv file with column names test_folder and automated_testing
-
-to run this file command- python all_testing.py --input ../results/university_of_potsdam/potassco/potassco.csv
-
-Status -
-
-"""
 import os
 import pandas as pd
 import requests
 import argparse
+from dotenv import load_dotenv
 
-def check_test_folder(url):
+def check_test_folder(url, username, access_token):
     api_url = url.replace("https://github.com/", "https://api.github.com/repos/") + "/contents/"
-    response = requests.get(api_url)
+    headers = {
+        "Authorization": f"token {access_token}",
+        "User-Agent": username
+    }
 
-    if response.status_code == 200:
-        content = response.json()
-        for item in content:
-            if item["type"] == "dir" and item["name"].lower() in ["test", "tests"]:
-                return True
+    try:
+        response = requests.get(api_url, headers=headers)
+        response.raise_for_status()
+        if response.status_code == 200:
+            content = response.json()
+            for item in content:
+                if item["type"] == "dir" and item["name"].lower() in ["test", "tests"]:
+                    return True
+    except requests.RequestException as e:
+        print(f"Error fetching repo contents: {e}")
     return False
 
-def check_automated_testing(url):
-    api_url_makefile = url.replace("https://github.com/", "https://raw.githubusercontent.com/") + "/main/Makefile"
-    api_url_yml = url.replace("https://github.com/",
-                              "https://raw.githubusercontent.com/") + "/main/.github/workflows/ci.yml"
 
-    response_makefile = requests.get(api_url_makefile)
-    response_yml = requests.get(api_url_yml)
+def check_automated_testing(url, username, access_token):
+    headers = {
+        "Authorization": f"token {access_token}",
+        "User-Agent": username
+    }
 
-    if response_makefile.status_code == 200:
-        makefile_content = response_makefile.text
-        if "test" in makefile_content:
+    # Checking both main and master branches
+    for branch in ['main', 'master']:
+        api_url_makefile = url.replace("https://github.com/",
+                                       "https://raw.githubusercontent.com/") + f"/{branch}/Makefile"
+        api_url_yml = url.replace("https://github.com/",
+                                  "https://raw.githubusercontent.com/") + f"/{branch}/.github/workflows/ci.yml"
+
+        response_makefile = requests.get(api_url_makefile, headers=headers)
+        response_yml = requests.get(api_url_yml, headers=headers)
+
+        if response_makefile.status_code == 200 and "test" in response_makefile.text:
             return True
 
-    if response_yml.status_code == 200:
-        yml_content = response_yml.text
-        if "test" in yml_content:
+        if response_yml.status_code == 200 and "test" in response_yml.text:
             return True
 
     return False
 
-def check_cicd_pipeline(url):
-    api_url_actions = url.replace("https://github.com/", "https://api.github.com/repos/") + "/actions"
-    response_actions = requests.get(api_url_actions)
-
-    if response_actions.status_code == 200:
-        actions_data = response_actions.json()
-        if actions_data.get("workflow_runs"):
-            return True
-    return False
-
-def main(csv_file_path):
-    # Read the CSV file
+def main(csv_file_path, username, access_token):
     df = pd.read_csv(csv_file_path, sep=',')
-
-    # Initialize the new column
-    df["actions"] = False
-
-    # Iterate through the "html_url" column and populate the new columns
     for idx, row in df.iterrows():
         url = row["html_url"]
-        df.at[idx, "test_folder"] = check_test_folder(url)
-        df.at[idx, "automated_testing"] = check_automated_testing(url)
-        df.at[idx, "actions"] = check_cicd_pipeline(url)
-
-    # Overwrite the input CSV file with the updated DataFrame
+        df.at[idx, "test_folder"] = check_test_folder(url, username, access_token)
+        df.at[idx, "automated_testing"] = check_automated_testing(url, username, access_token)
+    
     df.to_csv(csv_file_path, index=False)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Check test folder, automated testing, and CI/CD in CSV file")
-    parser.add_argument("input_csv", help="Path to the input CSV file")
+    load_dotenv()  # Load the .env file
 
+    USERNAME = os.getenv("USER")
+    ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+
+    parser = argparse.ArgumentParser(description="Check test folder and automated testing in CSV file")
+    parser.add_argument("--input", help="Path to the input CSV file", required=True)
+    
     args = parser.parse_args()
-    main(args.input_csv)
+    main(args.input, USERNAME, ACCESS_TOKEN)

@@ -41,7 +41,7 @@ sub folder <research_group_name_folder>
 2. Collect howfairis complience 
 
 ```
-python howfairis_org.py --input ../results/<organisation_name>/<research_group_name_folder>/<research_group_name>.csv  
+python howfairis_org.py --input ../results/<organisation_name>/<research_group_name_folder>/<research_group_name>.csv --output ../results/<organisation_name>/<research_group_name_folder>/<research_group_name>.csv 
 ```
 
 3. Collect all testing details 
@@ -63,5 +63,5 @@ python fair_score_counting.py <input>.csv
 
 
 ```
-python append_org_researchGroup_name.py ../results/university_of_potsdam/AEye/aeye-lab.csv --organization "university_of_potsdam" --research_group "aeya"
+python append_org_researchGroup_names.py ../results/university_of_potsdam/AEye/aeye-lab.csv --organization "university_of_potsdam" --research_group "aeya"
 ```

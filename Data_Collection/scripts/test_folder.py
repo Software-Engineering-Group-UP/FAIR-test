@@ -1,36 +1,56 @@
-'''
-
- python test_folder.py input.csv
-
-'''
-
-
-
 import pandas as pd
+import requests
+import os
 import argparse
+from dotenv import load_dotenv
 
-def calculate_fair_score(dataframe):
-    # Select the desired columns
-    columns = ['howfairis_repository', 'howfairis_license', 'howfairis_registry', 'howfairis_citation', 'howfairis_checklist']
 
-    # Count 'True' values along the columns for each row
-    dataframe['fair_score'] = dataframe[columns].sum(axis=1)
+def has_test_folder(url, username, access_token):
+    print(f"Checking URL: {url}")  # Debug print
 
-    return dataframe
+    repo_path = url.replace("https://github.com/", "")
+    api_url = f"https://api.github.com/repos/{repo_path}/contents"
+
+    headers = {
+        "Authorization": f"token {access_token}",
+        "User-Agent": username
+    }
+
+    response = requests.get(api_url, headers=headers)
+    if response.status_code != 200:
+        print(f"Failed to fetch data for {url}. Status code: {response.status_code}")
+        return False
+
+    for content in response.json():
+        if content["type"] in ["file", "dir"] and "test" in content["name"].lower():
+            return True
+    return False
+
+
+def update_csv_with_test_folder(filepath, username, access_token):
+    # Read CSV using pandas
+    df = pd.read_csv(filepath)
+
+    # Check for the 'html_url' column
+    if 'html_url' not in df.columns:
+        print("The provided CSV file does not contain an 'html_url' column.")
+        return
+
+    # Apply the has_test_folder function to the html_url column
+    df['test_folder'] = df['html_url'].apply(lambda url: has_test_folder(url, username, access_token))
+
+    # Save the modified DataFrame back to the CSV file
+    df.to_csv(filepath, index=False)
+
 
 if __name__ == "__main__":
-    # Initialize the argument parser
-    parser = argparse.ArgumentParser(description="Calculate the FAIR score from specified columns in a CSV file.")
-    parser.add_argument("filename", type=str, help="Path to the CSV file.")
+    load_dotenv()
 
+    USERNAME = os.getenv("USER")
+    ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+
+    parser = argparse.ArgumentParser(description='Check GitHub repositories for test folders.')
+    parser.add_argument('csv_path', help='Path to the CSV file containing GitHub repository URLs.')
     args = parser.parse_args()
 
-    # Read the CSV file
-    data = pd.read_csv(args.filename)
-
-    # Calculate the FAIR score
-    updated_data = calculate_fair_score(data)
-
-    # Save the updated DataFrame back to the original CSV file
-    updated_data.to_csv(args.filename, index=False)
-    print(f"Updated data saved back to {args.filename}")
+    update_csv_with_test_folder(args.csv_path, USERNAME, ACCESS_TOKEN)
