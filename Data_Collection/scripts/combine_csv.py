@@ -14,7 +14,7 @@ def get_all_csv_files(root_dir):
     return csv_files
 
 
-def combine_csv_files(csv_files, output_file='../results/university_of_potsdam/combined.csv'):
+def combine_csv_files(csv_files, output_file='../results/combined.csv'):                # Change this path where you want to save the results
     """Combine the given list of .csv files into a single .csv file."""
     dfs = []
 
@@ -29,7 +29,7 @@ def combine_csv_files(csv_files, output_file='../results/university_of_potsdam/c
 
 
 if __name__ == "__main__":
-    root_directory = "../results/university_of_potsdam"
+    root_directory = "../results"                                                      # Change this path from where you want to combine the files
     all_csv_files = get_all_csv_files(root_directory)
 
     if all_csv_files:
