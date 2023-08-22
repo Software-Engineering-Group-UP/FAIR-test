@@ -4,7 +4,7 @@
 write a python program to iterate through  column name "html_url" from a csv file and find out if given url has test or tests named folder (which is used code for testing) in the root directory also find out if test keyword is present in make file or yml file used for automated testing in cicd and write the result in same csv file with column names test_folder and automated_testing
 
 # This file is for testing the executable files before
-# current executable command - test_folder.py pik-piam --csv_path
+# current executable command - collect_org_repos.py pik-piam --csv_path
 
 
 """

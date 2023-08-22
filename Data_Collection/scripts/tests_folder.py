@@ -1,60 +1,57 @@
-# python script_name.py your_input.csv
-
-
-import argparse
 import requests
-import csv
-
-# GitHub API credentials
-api_key = ""  # Your GitHub API token here
-
-# API endpoint
-base_url = "https://api.github.com"
-headers = {
-    "Authorization": f"Token {api_key}",
-    "Accept": "application/vnd.github.v3+json"
-}
+import os
+import re
+import argparse
+from dotenv import load_dotenv
 
 
-def check_for_tests_folder(repo_name):
-    try:
-        # Check if the repository has a folder named "tests" in the root directory
-        repo_content_url = f"{base_url}/repos/{repo_name}/contents"
-        response = requests.get(repo_content_url, headers=headers)
-        response.raise_for_status()
-        repo_contents = response.json()
+def check_testthat_use(url, username, access_token):
+    repo_path = url.replace("https://github.com/", "")
 
-        return any(content["type"] == "dir" and content["name"] == "tests" for content in repo_contents)
-    except requests.exceptions.RequestException as e:
-        print(f"Error while fetching data for '{repo_name}': {str(e)}")
-        return False
+    # Fetch the DESCRIPTION file content
+    desc_url = f"https://raw.githubusercontent.com/{repo_path}/master/DESCRIPTION"
 
+    headers = {
+        "Authorization": f"token {access_token}",
+        "User-Agent": username
+    }
 
-def main(csv_file):
-    rows = []
+    response = requests.get(desc_url, headers=headers)
 
-    with open(csv_file, "r", newline="", encoding="utf-8") as file:
-        reader = csv.DictReader(file)
-        fieldnames = reader.fieldnames + ["test_folder"]
+    if response.status_code != 200:
+        print(f"Failed to fetch the DESCRIPTION file for {url}. Status code: {response.status_code}")
+        return False, None
 
-        for row in reader:
-            repo_name = row["name"]
-            has_tests_folder = check_for_tests_folder(repo_name)
+    if "testthat" in response.text:
+        # Check README for coverage badge
+        readme_url = f"https://raw.githubusercontent.com/{repo_path}/master/README.md"
+        response = requests.get(readme_url, headers=headers)
 
-            row["test_folder"] = str(has_tests_folder)
-            rows.append(row)
-
-    with open(csv_file, "w", newline="", encoding="utf-8") as file:
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
-
-    print(f"Updated data appended to '{csv_file}'.")
+        if response.status_code == 200:
+            coverage_match = re.search(r'coverage[-|_]\d+%?\.svg', response.text)
+            if coverage_match:
+                coverage = coverage_match.group().split('-')[1].split('.')[0]
+                return True, coverage
+        return True, None
+    return False, None
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Check GitHub repositories for the presence of 'tests' folder and append data to CSV.")
-    parser.add_argument("csv_file", help="Name of the CSV file containing repository data.")
+    load_dotenv()
+
+    USERNAME = os.getenv("USER")
+    ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+
+    parser = argparse.ArgumentParser(description='Check GitHub R repositories for testthat usage and test coverage.')
+    parser.add_argument('repo_url', help='GitHub URL of the R repository.')
     args = parser.parse_args()
 
-    main(args.csv_file)
+    uses_testthat, coverage = check_testthat_use(args.repo_url, USERNAME, ACCESS_TOKEN)
+    if uses_testthat:
+        print(f"'testthat' library is used in {args.repo_url}.")
+        if coverage:
+            print(f"Testing coverage: {coverage}")
+        else:
+            print("Testing coverage info not found.")
+    else:
+        print(f"'testthat' library is not used in {args.repo_url}.")
