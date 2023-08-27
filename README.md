@@ -56,7 +56,7 @@ Look at the documentation here:  https://docs.github.com/en/github/authenticatin
     │       ├── all_testing.py                   # collect all the repositories within the organisation
     │       ├── collect_org_repos.py             # Collects and save
     │       ├── howfairis_org.py                 # Enriches the collected repositories with howfairis variable
-    │        └── combine_csv.py  
+    │       └── combine_csv.py                   # Combines all .csv files in to single csv file.
     ├── .gitignore				                # Defines content which shouldn't be tracked by Git
     ├── CITATION.cff			                # Human- and machine-readable citation information for software
     ├── LICENSE				                    # License used for this software project
