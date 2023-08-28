@@ -7,3 +7,5 @@ in the data collected. This was possible due to our observation and previous kno
 mistakes we followed data quality measures and testing scripts to ensure the data collection is done properly. 
 
 To ensure the teh data quality (correctness, trustworthiness) and limitations of data collected we did qualitative 
+
+
