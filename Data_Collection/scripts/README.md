@@ -65,3 +65,5 @@ python fair_score_counting.py <input>.csv
 ```
 python append_org_researchGroup_names.py ../results/university_of_potsdam/AEye/aeye-lab.csv --organization "university_of_potsdam" --research_group "aeya"
 ```
+
+Run the scripts from qual_collect_scripts folder
