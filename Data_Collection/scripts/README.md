@@ -50,7 +50,7 @@ If testing is done, if github actions or cicd implemented and if automated testi
  python all_testing.py ../results/<organisation_name>/<research_group_name_folder>/<research_group_name>.csv  
 ```
 
-4. Combine results in single .csv file
+4. Combine results in single .csv file ``Èdit this file to provide dynamic input``
 
 ```
  python combine_csv.py 

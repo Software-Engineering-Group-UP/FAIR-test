@@ -1,5 +1,12 @@
-### Background 
-    
+### Background
+
+Scientific software developers/ research software developers are increasingly employing various software engineering practices for developing scientific software or also called as research software.
+There are many studies that points out the need of empirical evaluation of the use of testing techniques, methods, and practices in research software developer community. 
+Our goal is to collect and analyse a dataset of opensource research software repositories which can be used to empirically evaluate the software testing and quality component.
+
+In this study we collected repositories from over 7 organizations which has 21 research groups and collective collection of 815 repositories and 2 startups with around 310 open repositories. 
+
+We have also included research focus startups which would help to compare the testing across domains.
 
     
     
@@ -41,10 +48,7 @@ USER = "your github username"
 ```
 Look at the documentation here:  https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token
     
-### Project structure 
-    
-    
-    
+### Project structure
     
     ├── data_collection                     # results and scripts to collect the data  
     │  ├── results                          # Folder that contains the results of data collected through scripts
@@ -65,6 +69,6 @@ Look at the documentation here:  https://docs.github.com/en/github/authenticatin
     
      
 ### Usage 
-    
+You can find the 
     
 ### License 
