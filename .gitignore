@@ -1,5 +1,5 @@
-.DS_Store
-.env
-.idea
-.env
+*.DS_Store
+*.env
+*.idea
+*.env
 venv
