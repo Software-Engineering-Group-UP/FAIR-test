@@ -1,59 +1,54 @@
-"""
-GitHub Actions Checker
-
-This Python program checks if GitHub Actions is implemented in a given GitHub repository.
-It sends a request to the GitHub API to fetch the contents of the .github/workflows directory,
-and then checks if any YAML files exist in that directory. If YAML files are found, it considers
-GitHub Actions to be implemented in the repository; otherwise, it considers GitHub Actions
-not to be implemented.
-
-Usage:
-- Run the program and provide the GitHub repository URL when prompted.
-- The program will then check if GitHub Actions is implemented in the specified repository
-  and print the result.
-
-Example:
-python github_actions_checker.py
-Enter the GitHub repository URL: https://github.com/username/repository
-GitHub Actions is implemented in the repository.
-"""
+import os
 import requests
+from dotenv import load_dotenv
 
-def check_github_actions(repository_url):
+# Load environment variables from .env file
+load_dotenv()
+
+def check_linter_jobs(repository_url):
     """
-    Check if GitHub Actions is implemented in the given GitHub repository.
+    Check if the .yaml or .yml files in the .github/workflows directory execute linter jobs.
 
     Args:
     - repository_url: The URL of the GitHub repository to check.
 
     Returns:
-    - True if GitHub Actions is implemented, False otherwise.
+    - True if linter jobs are executed, False otherwise.
     """
+    # Extract the owner and repository name from the provided URL
+    owner, repo = repository_url.rstrip('/').split('/')[-2:]
+
     # Construct the API URL for fetching the contents of .github/workflows directory
-    api_url = f"{repository_url.rstrip('/')}/.github/workflows"
+    api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/.github/workflows"
+
+    # Get the GitHub token from environment variables
+    token = os.getenv('GITHUB_ACCESS_TOKEN')
+    headers = {'Authorization': f'token {token}'}
 
     # Send a GET request to the API URL
-    response = requests.get(api_url)
+    response = requests.get(api_url, headers=headers)
 
     # Check if the response is successful (status code 200)
     if response.status_code == 200:
         # Parse the JSON response
         data = response.json()
 
-        # Check if any YAML files exist in .github/workflows directory
+        # Check if any YAML files exist in .github/workflows directory and execute linter jobs
         for file in data:
             if file['type'] == 'file' and (file['name'].endswith('.yml') or file['name'].endswith('.yaml')):
-                return True
+                file_url = file['download_url']
+                file_content = requests.get(file_url).text
 
-    # GitHub Actions not implemented if the code reaches here
+                # Check if the file content contains linter jobs
+                if 'linter' in file_content:
+                    return True
+
+    # Linter jobs not found if the code reaches here
     return False
 
 if __name__ == "__main__":
     repository_url = input("Enter the GitHub repository URL: ")
-    if check_github_actions(repository_url):
-        print("GitHub Actions is implemented in the repository.")
+    if check_linter_jobs(repository_url):
+        print("Linter jobs are executed in the repository.")
     else:
-        print("GitHub Actions is not implemented in the repository.")
-
-
-# write a python program to check
+        print("Linter jobs are not executed in the repository.")
