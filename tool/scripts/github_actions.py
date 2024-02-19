@@ -21,6 +21,7 @@ GitHub Actions is implemented in the repository.
 import os
 import requests
 from dotenv import load_dotenv
+import yaml
 
 # Load environment variables from .env file
 load_dotenv()
@@ -55,12 +56,65 @@ def check_github_actions(repository_url):
         # Parse the JSON response
         data = response.json()
 
+         # List of common Python and R linter commands and their corresponding names
+        linter_commands = {
+            'pylint': 'Pylint',
+            'flake8': 'Flake8',
+            'bandit': 'Bandit',
+            'lintr::lint': 'lintr'
+        }
+
+        # List of common Python and R testing libraries and their corresponding names
+        testing_libraries = {
+            'pytest': 'pytest',
+            'unittest': 'unittest',
+            'nose': 'nose',
+            'testthat': 'testthat'
+        }        
+
+
         # Check if any YAML files exist in .github/workflows directory
         yaml_files = []
         for file in data:
             if file['type'] == 'file' and (file['name'].endswith('.yml') or file['name'].endswith('.yaml')):
                 yaml_files.append(file['name'])
                 print(f"YAML file found: {file['name']}")
+
+                 # Fetch the contents of the workflow file
+                file_response = requests.get(file['download_url'])
+                file_contents = file_response.text
+
+                # Check if the workflow file contains any of the linter commands
+                for command, name in linter_commands.items():
+                    if command in file_contents:
+                        print(f"Linter found: {name}")
+                        print("Checking for additional rules...")
+
+                        # Parse the YAML file
+                        workflow = yaml.safe_load(file_contents)
+
+                        # Check for additional rules
+                        for step in workflow.get('jobs', {}).values():
+                            for run in step.get('steps', []):
+                                if 'run' in run and command in run['run']:
+                                    print(f"Additional rules for {name}:")
+                                    print(run['run'])
+
+                # Check if the workflow file contains any of the testing libraries
+                for library, name in testing_libraries.items():
+                    if library in file_contents:
+                        print(f"Testing library found: {name}")
+                        print("Checking additional rules.. ")
+
+                        # Parse the YAML file
+                        workflow = yaml.safe_load(file_contents)
+
+                        # Check for additional rules for testing libraries
+                        for step in workflow.get('jobs', {}).values():
+                            for run in step.get('steps', []):
+                                if 'run' in run and library in run['run']:
+                                    print(f"Additional rules for {name}:")
+                                    print(run['run'])
 
         if yaml_files:
             print("YAML files in /.github/workflows:")
@@ -70,9 +124,6 @@ def check_github_actions(repository_url):
 
     # GitHub Actions not implemented if the code reaches here
     return False
-
-#function that checks if the .yaml or .yml file runs the linter jobs
-
 
 if __name__ == "__main__":
     repository_url = input("Enter the GitHub repository URL: ")
