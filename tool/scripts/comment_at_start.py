@@ -137,6 +137,36 @@ def traverse_subdirectories(repo_url, github_token):
 
     return results
 
+def get_root_folders(repo_url, github_token):
+    """
+    Get the names of all folders in the root directory of a GitHub repository.
+
+    Args:
+    - repo_url: The URL of the GitHub repository to check.
+    - github_token: The GitHub token to use for authentication.
+
+    Returns:
+    - A list of folder names.
+    """
+    # Parse owner and repo from URL
+    split_url = repo_url.split('/')
+    repo_owner = split_url[-2]
+    repo_name = split_url[-1]
+
+    # Set up session with GitHub token
+    session = requests.Session()
+    session.headers.update({'Authorization': f'token {github_token}'})
+
+    # Get list of all items in root directory
+    response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents')
+    response.raise_for_status()
+    data = response.json()
+
+    # Filter out the directories
+    folder_names = [item['name'] for item in data if item['type'] == 'dir']
+
+    return folder_names
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Check a GitHub repository for starting comments in Python and R files.')
     parser.add_argument('repo_url', help='The URL of the GitHub repository to check.')
@@ -157,3 +187,7 @@ if __name__ == "__main__":
     print(f'Total subdirectories scanned: {len(subdirectory_results)}')
     print(f'Subdirectories with starting comment: {len([result for result in subdirectory_results.values() if result])}')
     print(f'Subdirectories without starting comment: {len([result for result in subdirectory_results.values() if not result])}')
+
+    # Get and print folder names in root directory
+    folder_names = get_root_folders(args.repo_url, github_token)
+    print(f'Folders in the root directory of the repository: {folder_names}')
