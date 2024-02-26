@@ -13,6 +13,7 @@ import requests
 import argparse
 from dotenv import load_dotenv
 import base64
+import re
 
 def check_comment(file_content):
     """
@@ -28,7 +29,7 @@ def check_comment(file_content):
     for line in lines:
         stripped_line = line.strip()
         if stripped_line:  # if the line is not empty
-            if stripped_line.startswith('#') or stripped_line.startswith('%'):
+            if stripped_line.startswith('#') or stripped_line.startswith('%') or stripped_line.startswith('"""') or stripped_line.startswith("'''"):
                 return True
             else:
                 return False
@@ -167,6 +168,104 @@ def get_root_folders(repo_url, github_token):
 
     return folder_names
 
+def check_special_files(repo_url, github_token):
+    """
+    Check if the repository contains files named 'requirements.txt', 'requirements.md', 'changelog.txt', or 'changelog.md'.
+
+    Args:
+    - repo_url: The URL of the GitHub repository to check.
+    - github_token: The GitHub token to use for authentication.
+
+    Returns:
+    - A dictionary mapping the special file names to a boolean indicating if the file is present in the repository.
+    """
+    # Parse owner and repo from URL
+    split_url = repo_url.split('/')
+    repo_owner = split_url[-2]
+    repo_name = split_url[-1]
+
+    # Set up session with GitHub token
+    session = requests.Session()
+    session.headers.update({'Authorization': f'token {github_token}'})
+
+    # Define the special file names to check for
+    special_files = ['requirements.txt', 'requirements.md', 'changelog.txt', 'changelog.md']
+
+    # Check for the presence of each special file
+    results = {}
+    for file_name in special_files:
+        response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{file_name}')
+        results[file_name] = response.status_code == 200
+
+    return results
+
+def get_imported_libraries(file_content, file_type):
+    """
+    Get all libraries imported in a Python or R file.
+
+    Args:
+    - file_content: The content of the file to check.
+    - file_type: The type of the file ('.py' for Python, '.r' for R).
+
+    Returns:
+    - A list of libraries imported in the file.
+    """
+    libraries = []
+    if file_type == '.py':
+        matches = re.findall(r'^import (\S+)|^from (\S+) import', file_content, re.MULTILINE)
+        for match in matches:
+            libraries.append(match[0] if match[0] else match[1])
+    elif file_type == '.r':
+        matches = re.findall(r'library\((.*?)\)', file_content)
+        libraries.extend(matches)
+    return libraries
+
+def check_libraries(repo_url, github_token):
+    """
+    Check all Python and R files in a GitHub repository for imported libraries.
+
+    Args:
+    - repo_url: The URL of the GitHub repository to check.
+    - github_token: The GitHub token to use for authentication.
+
+    Returns:
+    - A dictionary mapping file paths to a list of libraries imported in the file.
+    """
+    # Parse owner and repo from URL
+    split_url = repo_url.split('/')
+    repo_owner = split_url[-2]
+    repo_name = split_url[-1]
+
+    # Set up session with GitHub token
+    session = requests.Session()
+    session.headers.update({'Authorization': f'token {github_token}'})
+
+    # Get list of all files in repository
+    file_list = []
+    page = 1
+    while True:
+        response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents?recursive=1&page={page}')
+        response.raise_for_status()
+        data = response.json()
+        file_list.extend([file for file in data if file['type'] == 'file' and (file['path'].endswith('.py') or file['path'].endswith('.r'))])
+        if 'next' in response.links:
+            page += 1
+        else:
+            break
+
+    # Check each file for imported libraries
+    results = {}
+    for file in file_list:
+        response = session.get(f"https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{file['path']}")
+        response.raise_for_status()
+        data = response.json()
+        file_content = base64.b64decode(data['content']).decode('utf-8')
+        libraries = get_imported_libraries(file_content, '.py' if file['path'].endswith('.py') else '.r')
+        results[file['path']] = libraries
+
+    return results
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Check a GitHub repository for starting comments in Python and R files.')
     parser.add_argument('repo_url', help='The URL of the GitHub repository to check.')
@@ -191,3 +290,12 @@ if __name__ == "__main__":
     # Get and print folder names in root directory
     folder_names = get_root_folders(args.repo_url, github_token)
     print(f'Folders in the root directory of the repository: {folder_names}')
+
+    # Check for the presence of special files
+    special_file_results = check_special_files(args.repo_url, github_token)
+    print(f'Special file presence: {special_file_results}')
+
+    # Check repository for imported libraries
+    library_results = check_libraries(args.repo_url, github_token)
+    print(f'Imported libraries: {library_results}')
+    
