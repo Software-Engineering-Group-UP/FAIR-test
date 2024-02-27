@@ -476,29 +476,41 @@ def check_libraries(repo_url, github_token):
     session = requests.Session()
     session.headers.update({'Authorization': f'token {github_token}'})
 
-    # Get list of all files in repository
-    file_list = []
-    page = 1
-    while True:
-        response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents?recursive=1&page={page}')
+    # Recursive function to traverse directories and collect libraries
+    def traverse_and_collect_libraries(directory_path):
+        # Get list of files and subdirectories in the current directory
+        response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{directory_path}')
         response.raise_for_status()
         data = response.json()
-        file_list.extend([file for file in data if file['type'] == 'file' and (file['path'].endswith('.py') or file['path'].endswith('.r'))])
-        if 'next' in response.links:
-            page += 1
-        else:
-            break
+        files = [file for file in data if file['type'] == 'file']
+        subdirectories = [directory for directory in data if directory['type'] == 'dir']
 
-    # Check each file for imported libraries
-    all_libraries = set()
-    for file in file_list:
-        response = session.get(f"https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{file['path']}")
-        response.raise_for_status()
-        data = response.json()
-        file_content = base64.b64decode(data['content']).decode('utf-8')
-        libraries = get_imported_libraries(file_content, '.py' if file['path'].endswith('.py') else '.r')
-        all_libraries.update(libraries)
+        # Collect libraries from files
+        all_libraries = set()
+        for file in files:
+            # Fetch file content
+            response = session.get(file['download_url'])
+            response.raise_for_status()
+            file_content = response.text
 
+            # Extract libraries based on file type
+            file_extension = os.path.splitext(file['name'])[1]
+            if file_extension == '.py':
+                matches = re.findall(r'^import (\S+)|^from (\S+) import', file_content, re.MULTILINE)
+                all_libraries.update(match[0] if match[0] else match[1] for match in matches)
+            elif file_extension == '.r':
+                matches = re.findall(r'library\((.*?)\)', file_content)
+                all_libraries.update(matches)
+
+        # Recursively traverse subdirectories
+        for directory in subdirectories:
+            subdirectory_path = os.path.join(directory_path, directory['name'])
+            all_libraries.update(traverse_and_collect_libraries(subdirectory_path))
+
+        return all_libraries
+
+    # Start traversal from the root directory
+    all_libraries = traverse_and_collect_libraries('')
     return list(all_libraries)
 
 if __name__ == "__main__":
@@ -512,27 +524,31 @@ if __name__ == "__main__":
 
     # Check repository for starting comments
     results, total_files, files_with_comments, files_without_comments = check_repository(args.repo_url, github_token)
-    print(f'Total Python/R files scanned: {total_files}')
-    print(f'Files with starting comment: {files_with_comments}')
-    print(f'Files without starting comment: {files_without_comments}')
+    print(f"Total Python/R files scanned: {total_files}")
+    print(f"Files with starting comment: {files_with_comments}")
+    print(f"Files without starting comment: {files_without_comments}")
 
     # Traverse subdirectories and check for starting comments
     subdirectory_results = traverse_subdirectories(args.repo_url, github_token)
-    print(f'Total subdirectories scanned: {len(subdirectory_results)}')
-    print(f'Subdirectories with starting comment: {len([result for result in subdirectory_results.values() if result])}')
-    print(f'Subdirectories without starting comment: {len([result for result in subdirectory_results.values() if not result])}')
+    print(f"Total subdirectories scanned: {len(subdirectory_results)}")
+    print(f"Subdirectories with starting comment: {sum(subdirectory_results.values())}")
+    print(f"Subdirectories without starting comment: {len(subdirectory_results) - sum(subdirectory_results.values())}")
 
     # Get and print folder names in root directory
     folder_names = get_root_folders(args.repo_url, github_token)
-    print(f'Folders in the root directory of the repository: {folder_names}')
+    print(f"Folders in the root directory of the repository: {folder_names}")
 
     # Check for the presence of special files
     special_file_results = check_special_files(args.repo_url, github_token)
-    print(f'Special file presence: {special_file_results}')
+    print("Special file presence:")
+    for file_name, present in special_file_results.items():
+        print(f"- {file_name}: {present}")
 
     # Check repository for imported libraries
     library_results = check_libraries(args.repo_url, github_token)
-    print(f'Imported libraries: {library_results}')
+    print("Imported libraries:")
+    for library in library_results:
+        print(f"- {library}")
     
 
 
