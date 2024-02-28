@@ -544,44 +544,6 @@ if __name__ == "__main__":
     for file_name, present in special_file_results.items():
         print(f"- {file_name}: {present}")
 
-    # Check repository for imported libraries
-    library_results = check_libraries(args.repo_url, github_token)
-    print("Imported libraries:")
-    for library in library_results:
-        print(f"- {library}")
-    
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Check a GitHub repository for starting comments in Python and R files.')
-    parser.add_argument('repo_url', help='The URL of the GitHub repository to check.')
-    args = parser.parse_args()
-
-    # Load GitHub token from .env file
-    load_dotenv()
-    github_token = os.getenv('GITHUB_ACCESS_TOKEN')
-
-    # Check repository for starting comments
-    results, total_files, files_with_comments, files_without_comments = check_repository(args.repo_url, github_token)
-    print(f'Total Python/R files scanned: {total_files}')
-    print(f'Files with starting comment: {files_with_comments}')
-    print(f'Files without starting comment: {files_without_comments}')
-
-    # Traverse subdirectories and check for starting comments
-    subdirectory_results = traverse_subdirectories(args.repo_url, github_token)
-    print(f'Total subdirectories scanned: {len(subdirectory_results)}')
-    print(f'Subdirectories with starting comment: {len([result for result in subdirectory_results.values() if result])}')
-    print(f'Subdirectories without starting comment: {len([result for result in subdirectory_results.values() if not result])}')
-
-    # Get and print folder names in root directory
-    folder_names = get_root_folders(args.repo_url, github_token)
-    print(f'Folders in the root directory of the repository: {folder_names}')
-
-    # Check for the presence of special files
-    special_file_results = check_special_files(args.repo_url, github_token)
-    print(f'Special file presence: {special_file_results}')
-
-    # Check repository for imported libraries
+   # Check repository for imported libraries
     library_results = check_libraries(args.repo_url, github_token)
     print(f'Imported libraries: {library_results}')
-    
