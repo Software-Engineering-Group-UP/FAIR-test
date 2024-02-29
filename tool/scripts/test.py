@@ -1,26 +1,9 @@
-"""
-This script checks all Python and R files in a GitHub repository for a starting comment. It uses the GitHub API to fetch the contents of each file in the repository. The GitHub token is read from a .env file in the root directory. The script is executable and accepts the repository URL as a command-line argument.
-
-The program performs the following functions:
-
-Checks if a file starts with a comment.
-Checks all Python and R files in a GitHub repository for a starting comment.
-Traverses all subdirectories of a GitHub repository and checks for starting comments in Python and R files.
-Gets the names of all folders in the root directory of a GitHub repository.
-Checks if the repository contains files named 'requirements.txt', 'requirements.md', 'changelog.txt', or 'changelog.md'.
-Gets all libraries imported in a Python or R file.
-Checks all Python and R files in a GitHub repository for imported libraries.
-
-Executable command example- 
-python comment_at_start.py https://api.github.com/repos/aadeshnpn/swarm  
-"""
-
+import csv
 import os
 import requests
-import argparse
-from dotenv import load_dotenv
 import base64
 import re
+from dotenv import load_dotenv
 
 def check_comment(file_content):
     """
@@ -52,6 +35,9 @@ def check_repository(repo_url, github_token):
 
     Returns:
     - A dictionary mapping file paths to a boolean indicating if the file starts with a comment.
+    - The total number of files scanned.
+    - The number of files with a starting comment.
+    - The number of files without a starting comment.
     """
     # Parse owner and repo from URL
     split_url = repo_url.split('/')
@@ -69,7 +55,7 @@ def check_repository(repo_url, github_token):
         response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents?recursive=1&page={page}')
         response.raise_for_status()
         data = response.json()
-        file_list.extend([file['path'] for file in data if file['type'] == 'file' and (file['path'].endswith('.py') or file['path'].endswith('.r'))])
+        file_list.extend([file['path'] for file in data if file['type'] == 'file' and (file['path'].endswith('.py') or file['path'].endswith('.r') or file['path'].endswith('.R'))])
         if 'next' in response.links:
             page += 1
         else:
@@ -86,14 +72,18 @@ def check_repository(repo_url, github_token):
         response.raise_for_status()
         data = response.json()
         file_content = base64.b64decode(data['content']).decode('utf-8')
-        has_comment = check_comment(file_content)         
+        has_comment = check_comment(file_content)
         results[file_path] = has_comment
         if has_comment:
             files_with_comments += 1
         else:
             files_without_comments += 1
 
-    return results, total_files, files_with_comments, files_without_comments
+    # Calculate percentage of files with comments
+    percentage_with_comments = (files_with_comments / total_files) * 100 if total_files > 0 else 0
+
+    return percentage_with_comments
+
 
 def traverse_subdirectories(repo_url, github_token):
     """
@@ -134,7 +124,7 @@ def traverse_subdirectories(repo_url, github_token):
         response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{directory_path}')
         response.raise_for_status()
         data = response.json()
-        file_list = [file['path'] for file in data if file['type'] == 'file' and (file['path'].endswith('.py') or file['path'].endswith('.r'))]
+        file_list = [file['path'] for file in data if file['type'] == 'file' and (file['path'].endswith('.py') or file['path'].endswith('.r') or file['path'].endswith('.R'))]
         for file_path in file_list:
             response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{file_path}')
             response.raise_for_status()
@@ -206,382 +196,48 @@ def check_special_files(repo_url, github_token):
 
     return results
 
-def get_imported_libraries(file_content, file_type):
+def read_repository_urls(csv_file):
     """
-    Get all libraries imported in a Python or R file.
+    Read repository URLs from a CSV file.
 
     Args:
-    - file_content: The content of the file to check.
-    - file_type: The type of the file ('.py' for Python, '.r' for R).
+    - csv_file: The path to the CSV file containing repository URLs.
 
     Returns:
-    - A list of libraries imported in the file.
+    - A list of repository URLs.
     """
-    libraries = []
-    if file_type == '.py':
-        matches = re.findall(r'^import (\S+)|^from (\S+) import', file_content, re.MULTILINE)
-        for match in matches:
-            libraries.append(match[0] if match[0] else match[1])
-    elif file_type == '.r':
-        matches = re.findall(r'library\((.*?)\)', file_content)
-        libraries.extend(matches)
-    return libraries
+    with open(csv_file, 'r') as file:
+        reader = csv.reader(file)
+        urls = [row[0] for row in reader]
+    return urls
 
-"""
-This script checks all Python and R files in a GitHub repository for a starting comment. It uses the GitHub API to fetch the contents of each file in the repository. The GitHub token is read from a .env file in the root directory. The script is executable and accepts the repository URL as a command-line argument.
-
-The program performs the following functions:
-
-Checks if a file starts with a comment.
-Checks all Python and R files in a GitHub repository for a starting comment.
-Traverses all subdirectories of a GitHub repository and checks for starting comments in Python and R files.
-Gets the names of all folders in the root directory of a GitHub repository.
-Checks if the repository contains files named 'requirements.txt', 'requirements.md', 'changelog.txt', or 'changelog.md'.
-Gets all libraries imported in a Python or R file.
-Checks all Python and R files in a GitHub repository for imported libraries.
-
-Executable command example- 
-python comment_at_start.py https://api.github.com/repos/aadeshnpn/swarm  
-"""
-
-import os
-import requests
-import argparse
-from dotenv import load_dotenv
-import base64
-import re
-
-def check_comment(file_content):
+def execute_and_write_results(csv_file, output_file):
     """
-    Check if a file starts with a comment.
+    Execute the functions on repository URLs read from the CSV file and write the results to an output CSV file.
 
     Args:
-    - file_content: The content of the file to check.
-
-    Returns:
-    - True if the file starts with a comment, False otherwise.
+    - csv_file: The path to the CSV file containing repository URLs.
+    - output_file: The path to the output CSV file where results will be written.
     """
-    lines = file_content.split('\n')
-    for line in lines:
-        stripped_line = line.strip()
-        if stripped_line:  # if the line is not empty
-            if stripped_line.startswith('#') or stripped_line.startswith('%') or stripped_line.startswith('"""') or stripped_line.startswith("'''"):
-                return True
-            else:
-                return False
-    return False
-
-def check_repository(repo_url, github_token):
-    """
-    Check all Python and R files in a GitHub repository for a starting comment.
-
-    Args:
-    - repo_url: The URL of the GitHub repository to check.
-    - github_token: The GitHub token to use for authentication.
-
-    Returns:
-    - A dictionary mapping file paths to a boolean indicating if the file starts with a comment.
-    """
-    # Parse owner and repo from URL
-    split_url = repo_url.split('/')
-    repo_owner = split_url[-2]
-    repo_name = split_url[-1]
-
-    # Set up session with GitHub token
-    session = requests.Session()
-    session.headers.update({'Authorization': f'token {github_token}'})
-
-    # Get list of all files in repository
-    file_list = []
-    page = 1
-    while True:
-        response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents?recursive=1&page={page}')
-        response.raise_for_status()
-        data = response.json()
-        file_list.extend([file['path'] for file in data if file['type'] == 'file' and (file['path'].endswith('.py') or file['path'].endswith('.r'))])
-        if 'next' in response.links:
-            page += 1
-        else:
-            break
-
-    # Check each file for a starting comment
-    results = {}
-    total_files = 0
-    files_with_comments = 0
-    files_without_comments = 0
-    for file_path in file_list:
-        total_files += 1
-        response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{file_path}')
-        response.raise_for_status()
-        data = response.json()
-        file_content = base64.b64decode(data['content']).decode('utf-8')
-        has_comment = check_comment(file_content)         
-        results[file_path] = has_comment
-        if has_comment:
-            files_with_comments += 1
-        else:
-            files_without_comments += 1
-
-    return results, total_files, files_with_comments, files_without_comments
-
-def traverse_subdirectories(repo_url, github_token):
-    """
-    Traverse all subdirectories of a GitHub repository and check for starting comments in Python and R files.
-
-    Args:
-    - repo_url: The URL of the GitHub repository to check.
-    - github_token: The GitHub token to use for authentication.
-
-    Returns:
-    - A dictionary mapping file paths to a boolean indicating if the file starts with a comment.
-    """
-    # Parse owner and repo from URL
-    split_url = repo_url.split('/')
-    repo_owner = split_url[-2]
-    repo_name = split_url[-1]
-
-    # Set up session with GitHub token
-    session = requests.Session()
-    session.headers.update({'Authorization': f'token {github_token}'})
-
-    # Get list of all directories in repository
-    directory_list = []
-    page = 1
-    while True:
-        response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents?recursive=1&page={page}')
-        response.raise_for_status()
-        data = response.json()
-        directory_list.extend([file['path'] for file in data if file['type'] == 'dir'])
-        if 'next' in response.links:
-            page += 1
-        else:
-            break
-
-    # Traverse each subdirectory and check for starting comments in Python and R files
-    results = {}
-    for directory_path in directory_list:
-        response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{directory_path}')
-        response.raise_for_status()
-        data = response.json()
-        file_list = [file['path'] for file in data if file['type'] == 'file' and (file['path'].endswith('.py') or file['path'].endswith('.r'))]
-        for file_path in file_list:
-            response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{file_path}')
-            response.raise_for_status()
-            data = response.json()
-            file_content = base64.b64decode(data['content']).decode('utf-8')
-            has_comment = check_comment(file_content)
-            results[file_path] = has_comment
-
-    return results
-
-def get_root_folders(repo_url, github_token):
-    """
-    Get the names of all folders in the root directory of a GitHub repository.
-
-    Args:
-    - repo_url: The URL of the GitHub repository to check.
-    - github_token: The GitHub token to use for authentication.
-
-    Returns:
-    - A list of folder names.
-    """
-    # Parse owner and repo from URL
-    split_url = repo_url.split('/')
-    repo_owner = split_url[-2]
-    repo_name = split_url[-1]
-
-    # Set up session with GitHub token
-    session = requests.Session()
-    session.headers.update({'Authorization': f'token {github_token}'})
-
-    # Get list of all items in root directory
-    response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents')
-    response.raise_for_status()
-    data = response.json()
-
-    # Filter out the directories
-    folder_names = [item['name'] for item in data if item['type'] == 'dir']
-
-    return folder_names
-
-def check_special_files(repo_url, github_token):
-    """
-    Check if the repository contains files named 'requirements.txt', 'requirements.md', 'changelog.txt', or 'changelog.md'.
-
-    Args:
-    - repo_url: The URL of the GitHub repository to check.
-    - github_token: The GitHub token to use for authentication.
-
-    Returns:
-    - A dictionary mapping the special file names to a boolean indicating if the file is present in the repository.
-    """
-    # Parse owner and repo from URL
-    split_url = repo_url.split('/')
-    repo_owner = split_url[-2]
-    repo_name = split_url[-1]
-
-    # Set up session with GitHub token
-    session = requests.Session()
-    session.headers.update({'Authorization': f'token {github_token}'})
-
-    # Define the special file names to check for
-    special_files = ['requirements.txt', 'requirements.md', 'changelog.txt', 'changelog.md']
-
-    # Check for the presence of each special file
-    results = {}
-    for file_name in special_files:
-        response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{file_name}')
-        results[file_name] = response.status_code == 200
-
-    return results
-
-def get_imported_libraries(file_content, file_type):
-    """
-    Get all libraries imported in a Python or R file.
-
-    Args:
-    - file_content: The content of the file to check.
-    - file_type: The type of the file ('.py' for Python, '.r' for R).
-
-    Returns:
-    - A list of libraries imported in the file.
-    """
-    libraries = []
-    if file_type == '.py':
-        matches = re.findall(r'^import (\S+)|^from (\S+) import', file_content, re.MULTILINE)
-        for match in matches:
-            libraries.append(match[0] if match[0] else match[1])
-    elif file_type == '.r':
-        matches = re.findall(r'library\((.*?)\)', file_content)
-        libraries.extend(matches)
-    return libraries
-
-def check_libraries(repo_url, github_token):
-    """
-    Check all Python and R files in a GitHub repository for imported libraries.
-
-    Args:
-    - repo_url: The URL of the GitHub repository to check.
-    - github_token: The GitHub token to use for authentication.
-
-    Returns:
-    - A list of unique libraries imported in any file in the repository.
-    """
-    # Parse owner and repo from URL
-    split_url = repo_url.split('/')
-    repo_owner = split_url[-2]
-    repo_name = split_url[-1]
-
-    # Set up session with GitHub token
-    session = requests.Session()
-    session.headers.update({'Authorization': f'token {github_token}'})
-
-    # Recursive function to traverse directories and collect libraries
-    def traverse_and_collect_libraries(directory_path):
-        # Get list of files and subdirectories in the current directory
-        response = session.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{directory_path}')
-        response.raise_for_status()
-        data = response.json()
-        files = [file for file in data if file['type'] == 'file']
-        subdirectories = [directory for directory in data if directory['type'] == 'dir']
-
-        # Collect libraries from files
-        all_libraries = set()
-        for file in files:
-            # Fetch file content
-            response = session.get(file['download_url'])
-            response.raise_for_status()
-            file_content = response.text
-
-            # Extract libraries based on file type
-            file_extension = os.path.splitext(file['name'])[1]
-            if file_extension == '.py':
-                matches = re.findall(r'^import (\S+)|^from (\S+) import', file_content, re.MULTILINE)
-                all_libraries.update(match[0] if match[0] else match[1] for match in matches)
-            elif file_extension == '.r':
-                matches = re.findall(r'library\((.*?)\)', file_content)
-                all_libraries.update(matches)
-
-        # Recursively traverse subdirectories
-        for directory in subdirectories:
-            subdirectory_path = os.path.join(directory_path, directory['name'])
-            all_libraries.update(traverse_and_collect_libraries(subdirectory_path))
-
-        return all_libraries
-
-    # Start traversal from the root directory
-    all_libraries = traverse_and_collect_libraries('')
-    return list(all_libraries)
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Check a GitHub repository for starting comments in Python and R files.')
-    parser.add_argument('repo_url', help='The URL of the GitHub repository to check.')
-    args = parser.parse_args()
-
     # Load GitHub token from .env file
     load_dotenv()
     github_token = os.getenv('GITHUB_ACCESS_TOKEN')
 
-    # Check repository for starting comments
-    results, total_files, files_with_comments, files_without_comments = check_repository(args.repo_url, github_token)
-    print(f"Total Python/R files scanned: {total_files}")
-    print(f"Files with starting comment: {files_with_comments}")
-    print(f"Files without starting comment: {files_without_comments}")
+    # Read repository URLs from the CSV file
+    repository_urls = read_repository_urls(csv_file)
 
-    # Traverse subdirectories and check for starting comments
-    subdirectory_results = traverse_subdirectories(args.repo_url, github_token)
-    print(f"Total subdirectories scanned: {len(subdirectory_results)}")
-    print(f"Subdirectories with starting comment: {sum(subdirectory_results.values())}")
-    print(f"Subdirectories without starting comment: {len(subdirectory_results) - sum(subdirectory_results.values())}")
+    # Execute functions on each repository URL and write results to output CSV file
+    with open(output_file, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Repository URL', 'Total Files', 'Files with Comment', 'Files without Comment', 'Total Subdirectories', 'Subdirectories with Comment', 'Subdirectories without Comment', 'Folder Names', 'Special File Presence'])
+        
+        for repo_url in repository_urls:
+            results, total_files, files_with_comments, files_without_comments = check_repository(repo_url, github_token)
+            subdirectory_results = traverse_subdirectories(repo_url, github_token)
+            folder_names = get_root_folders(repo_url, github_token)
+            special_file_results = check_special_files(repo_url, github_token)
+            
+            writer.writerow([repo_url, total_files, files_with_comments, files_without_comments, len(subdirectory_results), sum(subdirectory_results.values()), len(subdirectory_results) - sum(subdirectory_results.values()), folder_names, special_file_results])
 
-    # Get and print folder names in root directory
-    folder_names = get_root_folders(args.repo_url, github_token)
-    print(f"Folders in the root directory of the repository: {folder_names}")
-
-    # Check for the presence of special files
-    special_file_results = check_special_files(args.repo_url, github_token)
-    print("Special file presence:")
-    for file_name, present in special_file_results.items():
-        print(f"- {file_name}: {present}")
-
-    # Check repository for imported libraries
-    library_results = check_libraries(args.repo_url, github_token)
-    print("Imported libraries:")
-    for library in library_results:
-        print(f"- {library}")
-    
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Check a GitHub repository for starting comments in Python and R files.')
-    parser.add_argument('repo_url', help='The URL of the GitHub repository to check.')
-    args = parser.parse_args()
-
-    # Load GitHub token from .env file
-    load_dotenv()
-    github_token = os.getenv('GITHUB_ACCESS_TOKEN')
-
-    # Check repository for starting comments
-    results, total_files, files_with_comments, files_without_comments = check_repository(args.repo_url, github_token)
-    print(f'Total Python/R files scanned: {total_files}')
-    print(f'Files with starting comment: {files_with_comments}')
-    print(f'Files without starting comment: {files_without_comments}')
-
-    # Traverse subdirectories and check for starting comments
-    subdirectory_results = traverse_subdirectories(args.repo_url, github_token)
-    print(f'Total subdirectories scanned: {len(subdirectory_results)}')
-    print(f'Subdirectories with starting comment: {len([result for result in subdirectory_results.values() if result])}')
-    print(f'Subdirectories without starting comment: {len([result for result in subdirectory_results.values() if not result])}')
-
-    # Get and print folder names in root directory
-    folder_names = get_root_folders(args.repo_url, github_token)
-    print(f'Folders in the root directory of the repository: {folder_names}')
-
-    # Check for the presence of special files
-    special_file_results = check_special_files(args.repo_url, github_token)
-    print(f'Special file presence: {special_file_results}')
-
-    # Check repository for imported libraries
-    library_results = check_libraries(args.repo_url, github_token)
-    print(f'Imported libraries: {library_results}')
-    
+# Example usage
+execute_and_write_results('akshay.csv', 'akshay.csv')

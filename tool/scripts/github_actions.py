@@ -3,7 +3,7 @@ This Python program checks if GitHub Actions is implemented in a given GitHub re
 It uses the ghapi library to interact with the GitHub API, fetching the contents of the .github/workflows directory,
 and then checks if any YAML files exist in that directory. If YAML files are found, it considers
 GitHub Actions to be implemented in the repository; otherwise, it considers GitHub Actions
-not to be implemented.
+not to be implemented. 
 
 Example usage:
 python test.py https://api.github.com/repos/pik-piam/magpie4
